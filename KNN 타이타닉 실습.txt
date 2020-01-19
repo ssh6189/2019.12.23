@@ -1,0 +1,75 @@
+##########################KNN 분류 분석 실습 ####################
+import pandas as pd
+import seaborn as sns
+
+df = sns.load_dataset('titanic')
+print(df.info())   #891개행, 15변수
+print(df.head())
+
+#NaN 값이 많은 deck열(변수) 삭제
+#embarked와 embark_town 열(변수)는 의미가 동일하므로 embark_town 열 삭제
+ndf = df.drop (['deck', 'embark_town'], axis=1)
+print(len(ndf))    #?
+
+#age변수의 값이 NaN인 행을 삭제
+ndf = ndf.dropna(subset=['age'], how='any', axis=0)
+print(len(ndf))
+#embarked 열의 NaN값을 승선도시 중에서 가장 많이 출연한 데이터값으로 사용하기
+print(ndf['embarked'].value_counts(dropna=True))
+#ndf['embarked'].replace('NaN', 'S')
+#ndf['embarked'].value_count(dropna = True).idxmax()
+most_freq = ndf['embarked'].value_counts(dropna=True).idxmax()
+print(most_freq)
+
+ndf['embarked'].fillna(most_freq, inplace = True)
+print(ndf.describe(include = 'all'))
+
+#분류 분석에 사용할 변수 선택
+#survived, pclass. sex, age, sibsp, parch, embarked
+X = ndf[['pclass', 'sex', 'age', 'sibsp', 'parch', 'embarked']]
+Y = ndf['survived']
+
+#범주형 데이터를 모델이 인식할 수 있는 숫자형 데이터로 변환  : one-hot encoding
+onehot_sex = pd.get_dummies(ndf['sex'])
+ndf = pd.concat([ndf, onehot_sex], axis= 1)
+
+onehot_embarked = pd.get_dummies(ndf['embarked'], prefix='town')
+ndf = pd.concat([ndf, onehot_embarked], axis= 1)
+
+X = ndf[['pclass', 'female', 'male', 'age', 'sibsp', 'parch', 'town_Q', 'town_S']]
+Y = ndf['survived']
+
+#KNN 분류 분석을 수행하려면, 설명변수를 정규화 (평균 0, 표준편차 1)
+from sklearn import preprocessing
+print(X.head())
+X = preprocessing.StandardScaler().fit(X).transform(X)
+
+#train data:test data을 7:3으로 분리
+from sklearn.model_selection import train_test_split
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3, random_state = 10)
+print(X_train.shape)
+print(X_test.shape)
+
+#KNN 분류 분석으로 모델 생성
+from sklearn.neighbors import KNeighborsClassifier
+
+#k 개수 지정
+knn = KNeighborsClassifier(n_neighbors = 7)
+knn.fit(X_train, Y_train)
+
+#학습 데이터로부터 생성된 모델로부터 예측값 생성
+y_predict = knn.predict(X_test)
+print(y_predict[0:10])
+print(Y_test.values[0:10])
+
+from sklearn import metrics
+knn_matrix = metrics.confusion_matrix(Y_test, y_predict)
+print(knn_matrix)
+
+knn_report = metrics.classification_report(Y_test, y_predict)
+print(knn_report)
+
+#생존 여부를 분류할 때 영향을 주는 변수를 선택해서
+#k (최근접을 몇개까지 볼것인지 지정)은 되도록 작은 수를 설정하고 홀수로 설정해서 분류분석을 수행)
+#데이터셋에서 생존자 클래스(생존자, 비생존자)의 데이터 수가 동일하다면, 정확률로, 생존자 클래스의 데이터 수가 상이하다면 f1통계량으로 모델의 정확도를 판단한다.
+#통상적으로 k=1일때, overfitting 발생할 가능성이 높습니다.

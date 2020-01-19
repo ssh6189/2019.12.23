@@ -1,0 +1,54 @@
+####Decision Tree 분류 분석 실습####
+
+import pandas as pd
+import numpy as np
+uci_path='http://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data'
+
+df = pd.read_csv(uci_path, header = None)
+
+#print(df.head())
+
+df.columns=['d', 'clump', 'cell_size', 'cell_shape', 'adhesion', 'epithlial', 'bare_nuclei', 'chromation', 'normal_nucleoli', 'mitoses', 'class']
+
+print(df.info())
+print(df.describe())
+print(df['bare_nuclei'].unique())
+
+df['bare_nuclei'].replace('?', np.nan, inplace = True)
+df.dropna(subset = ['bare_nuclei'], axis = 0, inplace = True)
+df['bare_nuclei'] = df['bare_nuclei'].astype('int')
+print(df.info())
+print(df.describe())
+
+# 설명변수 (독립변수)
+X =df[['clump', 'cell_size', 'cell_shape', 'adhesion', 'epithlial', 'bare_nuclei', 'chromation', 'normal_nucleoli', 'mitoses']]
+# 종속변수 (예측변수, 반응변수)
+Y =df['class']
+
+#설명변수 데이터 정규화
+from sklearn import preprocessing
+X = preprocessing.StandardScaler().fit(X).transform(X)
+
+#train:tet(7:3)으로 데이터 분리
+from sklearn. model_selection import train_test_split
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.3, random_state = 10)
+print(X_train.shape)
+print(X_test.shape)
+
+#Decision Tree 분류 모델 생성
+from sklearn import tree
+
+tree_model = tree.DecisionTreeClassifier(criterion='entropy',  max_depth=5)
+#tree_model = tree.DecisionTreeClassifier(criterion='gini',  max_depth=5)
+tree_model.fit(X_train, Y_train)
+
+y_predict = tree_model.predict(X_test)  #
+print(y_predict[0:10])
+print(Y_test.values[0:10])
+
+from sklearn import metrics
+tree_matrix = metrics.confusion_matrix(Y_test, y_predict)
+print(tree_matrix)
+
+tree_report = metrics.classification_report(Y_test, y_predict)
+print(tree_report)

@@ -1,0 +1,34 @@
+##########################k-means 군집  분석 실습 ####################
+import pandas as pd
+import matplotlib.pyplot as plt
+
+uci_path='C:/Users/student/Desktop/Wholesale customers data.csv'
+
+df = pd.read_csv(uci_path, header=0)
+
+print(df.head())
+print(df.info())
+print(df.describe())
+
+X=df.iloc[ : , : ]
+
+from sklearn import preprocessing
+X=preprocessing.StandardScaler().fit(X).transform(X)
+
+from sklearn import cluster
+kmeans = cluster.KMeans(init='k-means++', n_clusters=5, n_init=10)
+
+kmeans.fit(X)
+
+cluster_label = kmeans.labels_  #군집분석의 예측값
+print(cluster_label)
+
+df ['Cluster']=cluster_label
+print(df.head())
+print(df.info())
+
+df.plot(kind = 'scatter', x = 'Grocery', y = 'Frozen', c = 'Cluster', cmap = 'Set1', colorbar = False, figsize = (10, 10))
+df.plot(kind = 'scatter', x = 'Milk', y = 'Delicassen', c = 'Cluster', cmap = 'Set1', colorbar = False, figsize = (10, 10))
+
+plt.show()
+plt.close()
